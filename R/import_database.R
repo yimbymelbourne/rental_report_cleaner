@@ -36,9 +36,9 @@ output <- read_excel(rental_file, sheet = x,skip =1 ) %>%
                names_to = "date_messy",
                values_to = "value") %>%
   mutate(date = if_else(substr(date_messy,1,1)==".",lag(date_messy),date_messy ),
-         type  = if_else(substr(date_messy,1,1)==".",
-                         "count",
-                         "median" )) %>%
+         measure  = if_else(substr(date_messy,1,1)==".",
+                         "median",
+                         "count" )) %>%
   select(-date_messy) %>% 
   mutate(series = x)
 
@@ -48,6 +48,15 @@ data <- map_df(sheet_names,import_sheet)  %>%
   filter(value != "-") %>% 
   mutate(date = dmy(paste0("1 ",date)),
          bedrooms = parse_number(series),
-         type = case_when(str_detect(series,"ouse") ~ "House",
+         home_type = case_when(str_detect(series,"ouse") ~ "House",
                           str_detect(series,"lat")  ~"Flat",
-                          str_detect(series,"All")  ~ "All"))
+                          str_detect(series,"All")  ~ "All"),
+         value = parse_number(value))
+
+
+data %>% 
+  filter(lga == "Melbourne",
+         measure == "median") %>% 
+  filter(home_type = "Flat") %>% 
+  ggplot(aes(x = date, y= value, colour = series))+
+  geom_line()
